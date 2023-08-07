@@ -32,9 +32,17 @@ import argparse
 import os
 import platform
 import sys
+import serial
+import time
 from pathlib import Path
 
 import torch
+
+arduino = serial.Serial(port='COM16', baudrate=9600)
+handshake = arduino.readline()
+print(handshake)
+# arduino.write('1'.encode('utf-8'))
+
 
 FILE = Path(__file__).resolve()
 ROOT = FILE.parents[0]  # YOLOv5 root directory
@@ -56,7 +64,7 @@ def run(
         source=ROOT / 'data/images',  # file/dir/URL/glob/screen/0(webcam)
         data=ROOT / 'data/coco128.yaml',  # dataset.yaml path
         imgsz=(640, 640),  # inference size (height, width)
-        conf_thres=0.25,  # confidence threshold
+        conf_thres=0.50,  # confidence threshold
         iou_thres=0.45,  # NMS IOU threshold
         max_det=1000,  # maximum detections per image
         device='',  # cuda device, i.e. 0 or 0,1,2,3 or cpu
@@ -205,6 +213,27 @@ def run(
 
         # Print time (inference-only)
         LOGGER.info(f"{s}{'' if len(det) else '(no detections), '}{dt[1].dt * 1E3:.1f}ms")
+        recog = (f"{s}{'' if len(det) else '(no detections), '}{dt[1].dt * 1E3:.1f}ms")
+        recycles = ['phone,','']
+        notRecycles = ['cup,']
+        tempo = recog.split(" ")
+        i = 0
+        for x in tempo:
+            if (x in recycles):
+                arduino.write('1'.encode('utf-8'))
+                print ("Encontro: " + x)
+                time.sleep(1)
+                handshake = arduino.read()
+                print(handshake)
+                i += i
+            if (x in notRecycles):
+                arduino.write('2'.encode('utf-8'))
+                print ("Encontro: " + x)
+                time.sleep(1)
+                handshake = arduino.read()
+                print(handshake)
+                i += i
+            
 
     # Print results
     t = tuple(x.t / seen * 1E3 for x in dt)  # speeds per image
